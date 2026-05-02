@@ -1,7 +1,7 @@
 import fs from "fs";
 import readline from "readline";
 
-export async function processLargeCsv(filePath) {
+export async function processLargeCsv(filePath, minAmount = 0) {
   const fileStream = fs.createReadStream(filePath, {
     encoding: "utf-8",
   });
@@ -14,6 +14,7 @@ export async function processLargeCsv(filePath) {
   let isFirstLine = true;
   let total = 0;
   let count = 0;
+  let skipped = 0;
 
   for await (const line of rl) {
     if (isFirstLine) {
@@ -24,14 +25,23 @@ export async function processLargeCsv(filePath) {
     const parts = line.split(",");
     const amount = Number(parts[2]);
 
-    if (!Number.isNaN(amount)) {
-      total += amount;
-      count++;
+    if (Number.isNaN(amount)) {
+      skipped++;
+      continue;
     }
+
+    if (amount < minAmount) {
+        skipped++;
+        continue;
+    }
+
+    total += amount;
+    count++;
   }
 
   return {
     count,
+    skipped,
     total,
     average: count > 0 ? total / count : 0,
   };
